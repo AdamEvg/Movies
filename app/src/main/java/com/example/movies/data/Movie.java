@@ -1,6 +1,11 @@
 package com.example.movies.data;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity (tableName = "movies")
 public class Movie {
+    @PrimaryKey
     private int id;
     private int voteCount;
     private String title;
@@ -12,20 +17,6 @@ public class Movie {
     private double voteAverage;
     private String releaseDate;
 
-    @Override
-    public String toString() {
-        return "Movie{" +
-                "id=" + id +
-                ", voteCount=" + voteCount +
-                ", title='" + title + '\'' +
-                ", originalTitle='" + originalTitle + '\'' +
-                ", overview='" + overview + '\'' +
-                ", posterPath='" + posterPath + '\'' +
-                ", backdropPath='" + backdropPath + '\'' +
-                ", voteAverage=" + voteAverage +
-                ", releaseDate='" + releaseDate + '\'' +
-                '}';
-    }
 
     public Movie(int id, int voteCount, String title, String originalTitle, String overview,
                  String posterPath,String bigPosterPath, String backdropPath, double voteAverage, String releaseDate) {
