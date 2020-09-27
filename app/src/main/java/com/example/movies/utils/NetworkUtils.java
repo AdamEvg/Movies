@@ -24,7 +24,7 @@ public class NetworkUtils {
     private static final String PARAMS_SORT_BY = "sort_by";
     private static final String PARAMS_PAGE = "page";
 
-    private static final String LANGUAGE_VALUE = "ru_RU";
+    private static final String LANGUAGE_VALUE = "ru-RU";
     private static final String SORT_BY_POPULARITY = "popularity.desc";
     private static final String SORT_BY_TOP_RATED = "vote_average.desc";
 

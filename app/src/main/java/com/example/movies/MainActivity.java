@@ -8,6 +8,10 @@ import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -41,13 +45,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if(! hasConnection(this)){
+            Toast.makeText(this, "Нет подключения к интернету", Toast.LENGTH_SHORT).show();
+        }
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         rvPosters = findViewById(R.id.rvPosters);
         switchSort = findViewById(R.id.switchSort);
         textViewPopularity = findViewById(R.id.textViewPopular);
         textViewTopRated = findViewById(R.id.textViewRate);
-
-
         rvPosters.setLayoutManager(new GridLayoutManager(this, 2));
         adapter = new Adapter();
         rvPosters.setAdapter(adapter);
@@ -62,6 +67,10 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnPosterClickListener(new Adapter.OnPosterClickListener() {
             @Override
             public void onPosterClick(int position) {
+                Movie movie = adapter.getMovies().get(position);
+                Intent intent = new Intent(MainActivity.this,DetailActivity.class);
+                intent.putExtra("id",movie.getId());
+                startActivity(intent);
             }
         });
         adapter.setOnReachEndListener(new Adapter.OnReachEndListener() {
@@ -76,6 +85,28 @@ public class MainActivity extends AppCompatActivity {
                 adapter.setMovies(movies);
             }
         });
+    }
+
+    //Метод, проверяющий соединение с интернетом( надо добавить в манифест разрешение )
+    public static boolean hasConnection(final Context context)
+    {
+        ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (wifiInfo != null && wifiInfo.isConnected())
+        {
+            return true;
+        }
+        wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        if (wifiInfo != null && wifiInfo.isConnected())
+        {
+            return true;
+        }
+        wifiInfo = cm.getActiveNetworkInfo();
+        if (wifiInfo != null && wifiInfo.isConnected())
+        {
+            return true;
+        }
+        return false;
     }
 
     public void onClickSetPopularity(View view) {
