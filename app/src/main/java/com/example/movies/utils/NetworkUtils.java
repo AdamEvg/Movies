@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutionException;
 public class NetworkUtils {
     private static final String API_KEY="6288b377337b42638795136e1ce6d292";
     private static final String BASE_URL="https://api.themoviedb.org/3/discover/movie";
+    private static final String BASE_URL_VIDEOS= "https://api.themoviedb.org/3/movie/%s/videos";
+    private static final String BASE_URL_REVIEWS= "https://api.themoviedb.org/3/movie/%s/reviews";
 
     private static final String PARAMS_API_KEY = "api_key";
     private static final String PARAMS_LANGUAGE = "language";
@@ -30,6 +32,56 @@ public class NetworkUtils {
 
     public static final int POPULARITY =0;
     public static final int TOP_RATED =1;
+
+    private static URL buildURLtoReviews(int filmId){
+        Uri uri = Uri.parse(String.format(BASE_URL_REVIEWS,filmId)).buildUpon()
+                .appendQueryParameter(PARAMS_API_KEY,API_KEY)
+                .build();
+        try {
+            return new URL(uri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public static JSONObject getJSONForReviews(int filmId){
+        JSONObject result = null;
+        URL url = buildURLtoReviews(filmId);
+        try {
+            result = new JSONLoadTask().execute(url).get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private static URL buildURLtoVideos(int filmId){
+        Uri uri = Uri.parse(String.format(BASE_URL_VIDEOS,filmId)).buildUpon()
+                .appendQueryParameter(PARAMS_API_KEY,API_KEY)
+                .appendQueryParameter(PARAMS_LANGUAGE,LANGUAGE_VALUE)
+                .build();
+        try {
+            return new URL(uri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static JSONObject getJSONForVideos(int filmId){
+        JSONObject result = null;
+        URL url = buildURLtoVideos(filmId);
+        try {
+            result = new JSONLoadTask().execute(url).get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 
     private static URL buildURL(int sortBy,int page){
         URL result = null;

@@ -1,9 +1,9 @@
 package com.example.movies;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,25 +13,25 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.movies.adapters.Adapter;
 import com.example.movies.data.MainViewModel;
 import com.example.movies.data.Movie;
 import com.example.movies.utils.JSONUtils;
 import com.example.movies.utils.NetworkUtils;
 
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.example.movies.utils.JSONUtils.getMoviesFromJSON;
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView rvPosters;
@@ -40,6 +40,29 @@ public class MainActivity extends AppCompatActivity {
     private TextView textViewPopularity;
     private TextView textViewTopRated;
     private MainViewModel mainViewModel;
+//Переопределили методы для создания меню
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu,menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+//В качестве параметра принимает пункт меню
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        switch (id){
+            case R.id.main_item:
+                Intent intent = new Intent(this,MainActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.favorite_item:
+                Intent favorite = new Intent(this, FavoriteActivity.class);
+                startActivity(favorite);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

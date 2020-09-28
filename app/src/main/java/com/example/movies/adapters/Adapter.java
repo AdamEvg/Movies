@@ -1,6 +1,5 @@
-package com.example.movies;
+package com.example.movies.adapters;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +8,7 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.movies.R;
 import com.example.movies.data.Movie;
 import com.squareup.picasso.Picasso;
 
@@ -42,11 +42,11 @@ public class Adapter extends RecyclerView.Adapter<Adapter.MovieViewHolder> {
         movies = new ArrayList<>();
     }
 
-    interface OnPosterClickListener{
+    public interface OnPosterClickListener{
         void onPosterClick(int position);
     }
 
-    interface OnReachEndListener{
+    public interface OnReachEndListener{
         void onReachEnd();
     }
 
@@ -63,7 +63,6 @@ public class Adapter extends RecyclerView.Adapter<Adapter.MovieViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MovieViewHolder holder, int position) {
-        Log.i("MY_TAG", "onBindViewHolder: " + position + "Размер массива" + movies.size() );
         if(position > movies.size() - 4 && onReachEndListener!=null){
             onReachEndListener.onReachEnd();
         }
