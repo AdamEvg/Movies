@@ -1,10 +1,13 @@
 package com.example.movies;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,30 +33,36 @@ import com.example.movies.utils.NetworkUtils;
 
 import org.json.JSONObject;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<JSONObject> {
     private RecyclerView rvPosters;
     private Adapter adapter;
     private Switch switchSort;
     private TextView textViewPopularity;
     private TextView textViewTopRated;
     private MainViewModel mainViewModel;
-//Переопределили методы для создания меню
+    //Любое число
+    public static final int LOADER_ID = 10;
+    private LoaderManager loaderManager;
+
+    //Переопределили методы для создания меню
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu,menu);
+        inflater.inflate(R.menu.main_menu, menu);
         return super.onCreateOptionsMenu(menu);
     }
-//В качестве параметра принимает пункт меню
+
+    //В качестве параметра принимает пункт меню
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
-        switch (id){
+        switch (id) {
             case R.id.main_item:
-                Intent intent = new Intent(this,MainActivity.class);
+                Intent intent = new Intent(this, MainActivity.class);
                 startActivity(intent);
                 break;
             case R.id.favorite_item:
@@ -68,9 +77,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if(! hasConnection(this)){
+        if (!hasConnection(this)) {
             Toast.makeText(this, "Нет подключения к интернету", Toast.LENGTH_SHORT).show();
         }
+        //SingleTon
+        loaderManager = LoaderManager.getInstance(this);
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
         rvPosters = findViewById(R.id.rvPosters);
         switchSort = findViewById(R.id.switchSort);
@@ -91,8 +102,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPosterClick(int position) {
                 Movie movie = adapter.getMovies().get(position);
-                Intent intent = new Intent(MainActivity.this,DetailActivity.class);
-                intent.putExtra("id",movie.getId());
+                Intent intent = new Intent(MainActivity.this, DetailActivity.class);
+                intent.putExtra("id", movie.getId());
                 startActivity(intent);
             }
         });
@@ -111,22 +122,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Метод, проверяющий соединение с интернетом( надо добавить в манифест разрешение )
-    public static boolean hasConnection(final Context context)
-    {
-        ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+    public static boolean hasConnection(final Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiInfo != null && wifiInfo.isConnected())
-        {
+        if (wifiInfo != null && wifiInfo.isConnected()) {
             return true;
         }
         wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (wifiInfo != null && wifiInfo.isConnected())
-        {
+        if (wifiInfo != null && wifiInfo.isConnected()) {
             return true;
         }
         wifiInfo = cm.getActiveNetworkInfo();
-        if (wifiInfo != null && wifiInfo.isConnected())
-        {
+        if (wifiInfo != null && wifiInfo.isConnected()) {
             return true;
         }
         return false;
@@ -157,7 +164,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void downLoadData(int methodOfSort, int page) {
-        JSONObject jsonObject = NetworkUtils.getJSONFromNetWork(methodOfSort, 1);
+        URL url = NetworkUtils.buildURL(methodOfSort, page);
+        Bundle bundle = new Bundle();
+        bundle.putString("url", url.toString());
+        //Этот метод проверит существует ли загрузчик
+        //Если загрузчик существует,то он его просто перезапустит
+        //А если нет, то вызовет метод initLoader()
+        loaderManager.restartLoader(LOADER_ID,bundle,this);
+    }
+
+    @NonNull
+    @Override
+    public Loader<JSONObject> onCreateLoader(int id, @Nullable Bundle bundle) {
+        NetworkUtils.JSONLoader jsonLoader = new NetworkUtils.JSONLoader(this, bundle);
+        return jsonLoader;
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<JSONObject> loader, JSONObject jsonObject) {
         ArrayList<Movie> movies = JSONUtils.getMoviesFromJSON(jsonObject);
         if (movies != null && !movies.isEmpty()) {
             mainViewModel.deleteAllMovies();
@@ -165,5 +189,11 @@ public class MainActivity extends AppCompatActivity {
                 mainViewModel.insertMovie(movie);
             }
         }
+        loaderManager.destroyLoader(LOADER_ID);
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<JSONObject> loader) {
+
     }
 }
