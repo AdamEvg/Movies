@@ -42,11 +42,11 @@ public class Adapter extends RecyclerView.Adapter<Adapter.MovieViewHolder> {
         movies = new ArrayList<>();
     }
 
-    public interface OnPosterClickListener{
+    public interface OnPosterClickListener {
         void onPosterClick(int position);
     }
 
-    public interface OnReachEndListener{
+    public interface OnReachEndListener {
         void onReachEnd();
     }
 
@@ -63,7 +63,8 @@ public class Adapter extends RecyclerView.Adapter<Adapter.MovieViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MovieViewHolder holder, int position) {
-        if(position > movies.size() - 4 && onReachEndListener!=null){
+        //Метод не будет вызываться пока мы не получим первые 20 фильмов
+        if (movies.size() >= 20 && position > movies.size() - 4 && onReachEndListener != null) {
             onReachEndListener.onReachEnd();
         }
         Movie movie = movies.get(position);
@@ -87,11 +88,16 @@ public class Adapter extends RecyclerView.Adapter<Adapter.MovieViewHolder> {
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if(onPosterClickListener != null){
+                    if (onPosterClickListener != null) {
                         onPosterClickListener.onPosterClick(getAdapterPosition());
                     }
                 }
             });
         }
+    }
+
+    public void clear(){
+        this.movies.clear();
+        notifyDataSetChanged();
     }
 }

@@ -33,7 +33,6 @@ public class NetworkUtils {
     private static final String PARAMS_PAGE = "page";
     private static final String PARAMS_MIN_VOTE_COUNT = "vote_count.gte";
 
-    private static final String LANGUAGE_VALUE = "ru-RU";
     private static final String SORT_BY_POPULARITY = "popularity.desc";
     private static final String SORT_BY_TOP_RATED = "vote_average.desc";
     private static final String MIN_VOTE_COUNT = "1000";
@@ -41,8 +40,9 @@ public class NetworkUtils {
     public static final int POPULARITY = 0;
     public static final int TOP_RATED = 1;
 
-    public static URL buildURLtoReviews(int filmId) {
+    public static URL buildURLtoReviews(int filmId,String language) {
         Uri uri = Uri.parse(String.format(BASE_URL_REVIEWS, filmId)).buildUpon()
+                .appendQueryParameter(PARAMS_LANGUAGE,language)
                 .appendQueryParameter(PARAMS_API_KEY, API_KEY)
                 .build();
         try {
@@ -53,9 +53,9 @@ public class NetworkUtils {
         return null;
     }
 
-    public static JSONObject getJSONForReviews(int filmId) {
+    public static JSONObject getJSONForReviews(int filmId,String language) {
         JSONObject result = null;
-        URL url = buildURLtoReviews(filmId);
+        URL url = buildURLtoReviews(filmId,language);
         try {
             result = new JSONLoadTask().execute(url).get();
         } catch (ExecutionException e) {
@@ -66,10 +66,10 @@ public class NetworkUtils {
         return result;
     }
 
-    public static URL buildURLtoVideos(int filmId) {
+    public static URL buildURLtoVideos(int filmId,String language) {
         Uri uri = Uri.parse(String.format(BASE_URL_VIDEOS, filmId)).buildUpon()
                 .appendQueryParameter(PARAMS_API_KEY, API_KEY)
-                .appendQueryParameter(PARAMS_LANGUAGE, LANGUAGE_VALUE)
+                .appendQueryParameter(PARAMS_LANGUAGE, language)
                 .build();
         try {
             return new URL(uri.toString());
@@ -79,9 +79,9 @@ public class NetworkUtils {
         return null;
     }
 
-    public static JSONObject getJSONForVideos(int filmId) {
+    public static JSONObject getJSONForVideos(int filmId,String language) {
         JSONObject result = null;
-        URL url = buildURLtoVideos(filmId);
+        URL url = buildURLtoVideos(filmId,language);
         try {
             result = new JSONLoadTask().execute(url).get();
         } catch (ExecutionException e) {
@@ -92,7 +92,7 @@ public class NetworkUtils {
         return result;
     }
 
-    public static URL buildURL(int sortBy, int page) {
+    public static URL buildURL(int sortBy, int page,String language) {
         URL result = null;
         String methodOfSort;
         if (sortBy == POPULARITY) {
@@ -102,7 +102,7 @@ public class NetworkUtils {
         }
         Uri uri = Uri.parse(BASE_URL).buildUpon()
                 .appendQueryParameter(PARAMS_API_KEY, API_KEY)
-                .appendQueryParameter(PARAMS_LANGUAGE, LANGUAGE_VALUE)
+                .appendQueryParameter(PARAMS_LANGUAGE, language)
                 .appendQueryParameter(PARAMS_SORT_BY, methodOfSort)
                 .appendQueryParameter(PARAMS_MIN_VOTE_COUNT, MIN_VOTE_COUNT)
                 .appendQueryParameter(PARAMS_PAGE, Integer.toString(page))
@@ -116,9 +116,9 @@ public class NetworkUtils {
     }
 
 
-    public static JSONObject getJSONFromNetWork(int sortBy, int page) {
+    public static JSONObject getJSONFromNetWork(int sortBy, int page,String language) {
         JSONObject result = null;
-        URL url = buildURL(sortBy, page);
+        URL url = buildURL(sortBy, page, language);
         try {
             result = new JSONLoadTask().execute(url).get();
         } catch (ExecutionException e) {
@@ -133,6 +133,14 @@ public class NetworkUtils {
     public static class JSONLoader extends AsyncTaskLoader<JSONObject> {
 
         private Bundle bundle;
+        private onStartLoadingListener onStartLoadingListener;
+        public interface onStartLoadingListener{
+            void onStartLoading();
+        }
+
+        public void setOnStartLoadingListener(JSONLoader.onStartLoadingListener onStartLoadingListener) {
+            this.onStartLoadingListener = onStartLoadingListener;
+        }
 
         public JSONLoader(@NonNull Context context, Bundle bundle) {
             super(context);
@@ -143,6 +151,10 @@ public class NetworkUtils {
         @Override
         protected void onStartLoading() {
             super.onStartLoading();
+            //Таким образом мы добавили слушатель и при старте загрузки можем выолпнять какие-то действия
+            if(onStartLoadingListener!=null){
+                onStartLoadingListener.onStartLoading();
+            }
             //Продолжить загрузку
             forceLoad();
         }

@@ -16,11 +16,13 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,6 +38,7 @@ import org.json.JSONObject;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<JSONObject> {
     private RecyclerView rvPosters;
@@ -44,6 +47,12 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     private TextView textViewPopularity;
     private TextView textViewTopRated;
     private MainViewModel mainViewModel;
+    private ProgressBar progressBar;
+
+    private static int page = 1;
+    private static String language;
+    private static int methodOfSort;
+    private static boolean isLoading = false;
     //Любое число
     public static final int LOADER_ID = 10;
     private LoaderManager loaderManager;
@@ -73,6 +82,14 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
+    private int getColumnCount(){
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        //Получаем обычные пиксели, но нужно перевести в dp, для этого разделим на плотность
+        int width = (int)(displayMetrics.widthPixels/displayMetrics.density);
+        return (width/185)>2 ? width/185 : 2;
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +97,9 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         if (!hasConnection(this)) {
             Toast.makeText(this, "Нет подключения к интернету", Toast.LENGTH_SHORT).show();
         }
+        //Получили язык, установленный на устройстве
+        language = Locale.getDefault().getLanguage();
+        progressBar = findViewById(R.id.progressBarLoading);
         //SingleTon
         loaderManager = LoaderManager.getInstance(this);
         mainViewModel = ViewModelProviders.of(this).get(MainViewModel.class);
@@ -87,13 +107,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         switchSort = findViewById(R.id.switchSort);
         textViewPopularity = findViewById(R.id.textViewPopular);
         textViewTopRated = findViewById(R.id.textViewRate);
-        rvPosters.setLayoutManager(new GridLayoutManager(this, 2));
+        //Второй параметр - число колонок
+        rvPosters.setLayoutManager(new GridLayoutManager(this, getColumnCount()));
         adapter = new Adapter();
         rvPosters.setAdapter(adapter);
         switchSort.setChecked(true);
         switchSort.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                page=1;
                 setOfMethodOfSort(isChecked);
             }
         });
@@ -110,13 +132,18 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         adapter.setOnReachEndListener(new Adapter.OnReachEndListener() {
             @Override
             public void onReachEnd() {
+                if(!isLoading){
+                    downLoadData(methodOfSort,page);
+                }
             }
         });
         LiveData<List<Movie>> moviesFromLiveData = mainViewModel.getMovies();
         moviesFromLiveData.observe(this, new Observer<List<Movie>>() {
             @Override
             public void onChanged(List<Movie> movies) {
-                adapter.setMovies(movies);
+                if(page==1){
+                    adapter.setMovies(movies);
+                }
             }
         });
     }
@@ -150,7 +177,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void setOfMethodOfSort(boolean isChecked) {
-        int methodOfSort;
         if (isChecked) {
             textViewTopRated.setTextColor(getResources().getColor(R.color.colorAccent));
             textViewPopularity.setTextColor(getResources().getColor(R.color.white_color));
@@ -160,11 +186,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             textViewPopularity.setTextColor(getResources().getColor(R.color.colorAccent));
             methodOfSort = NetworkUtils.POPULARITY;
         }
-        downLoadData(methodOfSort, 1);
+        downLoadData(methodOfSort, page);
     }
 
     private void downLoadData(int methodOfSort, int page) {
-        URL url = NetworkUtils.buildURL(methodOfSort, page);
+        URL url = NetworkUtils.buildURL(methodOfSort, page,language);
         Bundle bundle = new Bundle();
         bundle.putString("url", url.toString());
         //Этот метод проверит существует ли загрузчик
@@ -177,6 +203,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     public Loader<JSONObject> onCreateLoader(int id, @Nullable Bundle bundle) {
         NetworkUtils.JSONLoader jsonLoader = new NetworkUtils.JSONLoader(this, bundle);
+        jsonLoader.setOnStartLoadingListener(new NetworkUtils.JSONLoader.onStartLoadingListener() {
+            @Override
+            public void onStartLoading() {
+                progressBar.setVisibility(View.VISIBLE);
+                isLoading = true;
+            }
+        });
         return jsonLoader;
     }
 
@@ -184,11 +217,20 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     public void onLoadFinished(@NonNull Loader<JSONObject> loader, JSONObject jsonObject) {
         ArrayList<Movie> movies = JSONUtils.getMoviesFromJSON(jsonObject);
         if (movies != null && !movies.isEmpty()) {
-            mainViewModel.deleteAllMovies();
+            if(page == 1){
+                mainViewModel.deleteAllMovies();
+                adapter.clear();
+            }
+
+
             for (Movie movie : movies) {
                 mainViewModel.insertMovie(movie);
             }
+            adapter.addMovies(movies);
+            page++;
         }
+        isLoading = false;
+        progressBar.setVisibility(View.INVISIBLE);
         loaderManager.destroyLoader(LOADER_ID);
     }
 
